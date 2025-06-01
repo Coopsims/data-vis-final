@@ -75,8 +75,8 @@ connection_lock = threading.Lock()
 def monitor_connections():
     # Give time for initial connection
     startup_time = time.time()
-    startup_grace_period = 30  # seconds
-    connection_timeout = 30  # seconds - how long to wait before considering a connection stale
+    startup_grace_period = 60  # seconds
+    connection_timeout = 300  # seconds - how long to wait before considering a connection stale
 
     had_connections = False
 
@@ -160,7 +160,7 @@ app.index_string = '''
                                 }).catch(function(error) {
                                     console.log('Ping error:', error);
                                 });
-                            }, 10000); // Ping every 10 seconds
+                            }, 60000); // Ping every 60 seconds
                         }
 
                         // Set up the unload handler - try multiple approaches
