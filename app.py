@@ -75,8 +75,8 @@ connection_lock = threading.Lock()
 def monitor_connections():
     # Give time for initial connection
     startup_time = time.time()
-    startup_grace_period = 30  # seconds
-    connection_timeout = 30  # seconds - how long to wait before considering a connection stale
+    startup_grace_period = 60  # seconds
+    connection_timeout = 120  # seconds - how long to wait before considering a connection stale
 
     had_connections = False
 
