@@ -76,7 +76,7 @@ def monitor_connections():
     # Give time for initial connection
     startup_time = time.time()
     startup_grace_period = 60  # seconds
-    connection_timeout = 120  # seconds - how long to wait before considering a connection stale
+    connection_timeout = 300  # seconds - how long to wait before considering a connection stale
 
     had_connections = False
 
@@ -410,7 +410,9 @@ def update_figures(genres: list[str], pop_range: list[int], explicit_filter: str
     )
 
     # Bar chart ------------------------------------------------------------
-    bar_df = dff.nlargest(10, "popularity").sort_values("popularity", ascending=True)
+    # Drop duplicates to ensure each song appears only once
+    unique_tracks = dff.drop_duplicates(subset=["track_name", "artists"])
+    bar_df = unique_tracks.nlargest(10, "popularity").sort_values("popularity", ascending=True)
     bar = px.bar(
         bar_df,
         x="popularity",
