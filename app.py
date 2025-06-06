@@ -76,7 +76,7 @@ def monitor_connections():
     # Give time for initial connection
     startup_time = time.time()
     startup_grace_period = 60  # seconds
-    connection_timeout = 300  # seconds - how long to wait before considering a connection stale
+    connection_timeout = 120  # seconds - how long to wait before considering a connection stale
 
     had_connections = False
 
@@ -388,12 +388,38 @@ def update_figures(genres: list[str], pop_range: list[int], explicit_filter: str
     elif explicit_filter == "explicit":
         dff = dff[dff["explicit"]]
 
+    # Calculate mean popularity for songs with multiple entries
+    # Group by track_name and artists to identify unique songs
+    dff = dff.groupby(['track_name', 'artists']).agg({
+        'popularity': 'mean',  # Calculate mean popularity
+        'track_genre': 'first',  # Keep the first genre
+        'explicit': 'first',  # Keep the first explicit value
+        'danceability': 'first',
+        'energy': 'first',
+        'key': 'first',
+        'loudness': 'first',
+        'mode': 'first',
+        'speechiness': 'first',
+        'acousticness': 'first',
+        'instrumentalness': 'first',
+        'liveness': 'first',
+        'valence': 'first',
+        'tempo': 'first',
+        'duration_ms': 'first',
+    }).reset_index()
+
+    # Create a consistent color map for genres
+    genre_colors = {}
+    for i, genre in enumerate(sorted(dff['track_genre'].unique())):
+        genre_colors[genre] = px.colors.qualitative.Plotly[i % len(px.colors.qualitative.Plotly)]
+
     # Scatter plot ---------------------------------------------------------
     scatter = px.scatter(
         dff,
         x=x_col,
         y=y_col,
         color="track_genre",
+        color_discrete_map=genre_colors,
         hover_data=["track_name", "artists", "popularity"],
         labels={x_col: metric_labels[x_col], y_col: metric_labels[y_col], "track_genre": "Genre"},
         title=f"{metric_labels[x_col]} vs {metric_labels[y_col]} ({len(dff)} tracks)",
@@ -404,21 +430,29 @@ def update_figures(genres: list[str], pop_range: list[int], explicit_filter: str
         dff,
         x="track_genre",
         y=y_col,
+        color="track_genre",
+        color_discrete_map=genre_colors,
         points="all",
         labels={"track_genre": "Genre", y_col: metric_labels[y_col]},
         title=f"Distribution of {metric_labels[y_col]} by Genre",
     )
 
     # Bar chart ------------------------------------------------------------
-    bar_df = dff.nlargest(10, "popularity").sort_values("popularity", ascending=True)
+    # Get the most popular track for each genre
+    # Ensure we only include tracks with genres that are in the selected genres
+    bar_df = dff[dff.track_genre.isin(genres)].groupby("track_genre").apply(lambda x: x.nlargest(1, "popularity"), include_groups=False).reset_index(drop=True)
+    bar_df = bar_df.sort_values("popularity", ascending=True)
+
     bar = px.bar(
         bar_df,
         x="popularity",
         y="track_name",
         orientation="h",
+        color="track_genre",
+        color_discrete_map=genre_colors,
         hover_data=["artists", "track_genre"],
-        labels={"popularity": "Popularity", "track_name": "Track"},
-        title="Top 10 Most Popular Tracks (filtered)",
+        labels={"popularity": "Popularity", "track_name": "Track", "track_genre": "Genre"},
+        title="Most Popular Track by Genre",
     )
 
     return scatter, box, bar
